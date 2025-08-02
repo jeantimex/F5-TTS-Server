@@ -47,6 +47,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Received empty audio file');
             }
 
+            // Clean up previous audio URL if it exists
+            if (audioPlayer.src && audioPlayer.src.startsWith('blob:')) {
+                URL.revokeObjectURL(audioPlayer.src);
+            }
+            
             // Create object URL for the audio blob
             const audioUrl = URL.createObjectURL(audioBlob);
             
@@ -57,11 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show results
             showResults();
             audioStatus.textContent = `Audio generated successfully! (${formatFileSize(audioBlob.size)})`;
-            
-            // Clean up the URL when audio is loaded to free memory
-            audioPlayer.addEventListener('loadeddata', function() {
-                URL.revokeObjectURL(audioUrl);
-            }, { once: true });
 
         } catch (error) {
             console.error('Error generating speech:', error);
@@ -88,6 +88,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function hideResults() {
         resultSection.style.display = 'none';
+        
+        // Clean up blob URL before clearing src
+        if (audioPlayer.src && audioPlayer.src.startsWith('blob:')) {
+            URL.revokeObjectURL(audioPlayer.src);
+        }
+        
         audioPlayer.src = '';
     }
 
