@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F5-TTS Demo</title>
+    <link rel="stylesheet" href="/static/main.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>F5-TTS Text-to-Speech Demo</h1>
+            <p>Enter text below to generate speech using F5-TTS</p>
+        </header>
+        
+        <main>
+            <form id="tts-form" class="tts-form">
+                <div class="input-group">
+                    <label for="text-input">Text to Speech:</label>
+                    <textarea 
+                        id="text-input" 
+                        name="gen_text" 
+                        placeholder="Enter the text you want to convert to speech..."
+                        rows="4"
+                        required
+                    ></textarea>
+                </div>
+                
+                <button type="submit" id="generate-btn" class="generate-btn">
+                    <span class="btn-text">Generate Speech</span>
+                    <span class="spinner" style="display: none;">Loading...</span>
+                </button>
+            </form>
+            
+            <div id="result-section" class="result-section" style="display: none;">
+                <h3>Generated Audio:</h3>
+                <audio id="audio-player" controls>
+                    Your browser does not support the audio element.
+                </audio>
+                <div class="audio-info">
+                    <p id="audio-status"></p>
+                </div>
+            </div>
+            
+            <div id="error-section" class="error-section" style="display: none;">
+                <h3>Error:</h3>
+                <p id="error-message"></p>
+            </div>
+        </main>
+    </div>
+    
+    <script src="/static/main.js"></script>
+</body>
+</html>

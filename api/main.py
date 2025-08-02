@@ -1,16 +1,39 @@
 import subprocess
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from fastapi.responses import FileResponse
 import os
+import io
 
 project_root = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 class TTSRequest(BaseModel):
     gen_text: str
+
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    try:
+        with open("static/index.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Index file not found")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=500, detail="Error reading index file")
 
 @app.post("/tts/")
 async def text_to_speech(request: TTSRequest):
@@ -36,6 +59,10 @@ async def text_to_speech(request: TTSRequest):
         raise HTTPException(status_code=500, detail="'f5-tts_infer-cli' not found. Ensure the virtual environment is activated and dependencies are installed correctly.")
 
     if os.path.exists(output_path):
-        return FileResponse(output_path, media_type="audio/wav", filename=output_filename)
+        def iter_file():
+            with open(output_path, "rb") as file_like:
+                yield from file_like
+        
+        return StreamingResponse(iter_file(), media_type="audio/wav")
     else:
         raise HTTPException(status_code=404, detail="Generated audio file not found. The TTS command may have failed silently.")
