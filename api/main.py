@@ -64,7 +64,7 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"Input text: '{request.gen_text[:100]}{'...' if len(request.gen_text) > 100 else ''}'")
     logger.info(f"Text length: {len(request.gen_text)} characters")
     
-    ref_audio_path = os.path.join(project_root, "F5-TTS/src/f5_tts/infer/examples/basic/basic_ref_en.wav")
+    ref_audio_path = os.path.join(project_root, "ref_audios", "basic_ref_en.wav")
     output_filename = f"{timestamp}.wav"
     output_path = os.path.join("output", output_filename)
     
