@@ -66,6 +66,7 @@ class TTSRequest(BaseModel):
     speed: float = 1.0
     nfe_steps: int = 32
     crossfade_duration: float = 0.15
+    ref_audio: str = "basic_ref_en.wav"
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
@@ -76,6 +77,35 @@ async def read_index():
         raise HTTPException(status_code=404, detail="Index file not found")
     except UnicodeDecodeError:
         raise HTTPException(status_code=500, detail="Error reading index file")
+
+@app.get("/ref-audios/")
+async def list_reference_audios():
+    """List available reference audio files"""
+    ref_audios_path = os.path.join(project_root, "ref_audios")
+    
+    if not os.path.exists(ref_audios_path):
+        return {"files": [], "default": "basic_ref_en.wav"}
+    
+    try:
+        # Get all audio files in the ref_audios directory
+        audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
+        files = []
+        
+        for filename in os.listdir(ref_audios_path):
+            if any(filename.lower().endswith(ext) for ext in audio_extensions):
+                file_path = os.path.join(ref_audios_path, filename)
+                if os.path.isfile(file_path):
+                    files.append(filename)
+        
+        files.sort()  # Sort alphabetically
+        
+        return {
+            "files": files,
+            "default": "basic_ref_en.wav" if "basic_ref_en.wav" in files else (files[0] if files else None)
+        }
+    except Exception as e:
+        logger.error(f"Error listing reference audio files: {e}")
+        return {"files": [], "default": "basic_ref_en.wav"}
 
 @app.post("/tts/")
 async def text_to_speech(request: TTSRequest):
@@ -89,8 +119,9 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"Speed setting: {request.speed}x")
     logger.info(f"NFE steps: {request.nfe_steps}")
     logger.info(f"Cross-fade duration: {request.crossfade_duration}s")
+    logger.info(f"Reference audio: {request.ref_audio}")
     
-    ref_audio_path = os.path.join(project_root, "ref_audios", "basic_ref_en.wav")
+    ref_audio_path = os.path.join(project_root, "ref_audios", request.ref_audio)
     output_filename = f"{timestamp}.wav"
     output_path = os.path.join("output", output_filename)
     

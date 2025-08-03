@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const nfeValue = document.getElementById('nfe-value');
     const crossfadeInput = document.getElementById('crossfade-input');
     const crossfadeValue = document.getElementById('crossfade-value');
+    const refAudioSelect = document.getElementById('ref-audio-select');
     const generateBtn = document.getElementById('generate-btn');
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
@@ -15,6 +16,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const audioPlayer = document.getElementById('audio-player');
     const audioStatus = document.getElementById('audio-status');
     const errorMessage = document.getElementById('error-message');
+
+    let selectedRefAudio = 'basic_ref_en.wav'; // Default selection
+
+    // Load reference audio files on page load
+    loadReferenceAudios();
+
+    async function loadReferenceAudios() {
+        try {
+            refAudioSelect.disabled = true;
+            const response = await fetch('/ref-audios/');
+            const data = await response.json();
+            
+            // Clear existing options
+            refAudioSelect.innerHTML = '';
+            
+            if (data.files && data.files.length > 0) {
+                selectedRefAudio = data.default || data.files[0];
+                
+                // Add options to select
+                data.files.forEach(filename => {
+                    const option = document.createElement('option');
+                    option.value = filename;
+                    option.textContent = filename;
+                    option.selected = filename === data.default;
+                    refAudioSelect.appendChild(option);
+                });
+                
+                refAudioSelect.disabled = false;
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No reference audio files found';
+                option.disabled = true;
+                refAudioSelect.appendChild(option);
+            }
+        } catch (error) {
+            console.error('Error loading reference audios:', error);
+            refAudioSelect.innerHTML = '<option value="" disabled>Error loading reference audios</option>';
+        }
+    }
+
+    // Handle reference audio selection change
+    refAudioSelect.addEventListener('change', function() {
+        selectedRefAudio = this.value;
+    });
 
     // Update speed value display when slider changes
     speedInput.addEventListener('input', function() {
@@ -67,7 +113,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     gen_text: text,
                     speed: speed,
                     nfe_steps: nfeSteps,
-                    crossfade_duration: crossfadeDuration
+                    crossfade_duration: crossfadeDuration,
+                    ref_audio: selectedRefAudio
                 })
             });
 
