@@ -1,8 +1,9 @@
 import subprocess
 import logging
 import time
+import re
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -108,6 +109,64 @@ async def serve_reference_audio(filename: str):
         raise HTTPException(status_code=400, detail="Invalid audio file format")
     
     return FileResponse(file_path, media_type="audio/wav", filename=filename)
+
+@app.post("/upload-ref-audio/")
+async def upload_reference_audio(file: UploadFile = File(...)):
+    """Upload a reference audio file"""
+    
+    # Validate file type - support multiple formats as per F5-TTS
+    allowed_types = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/flac', 'audio/x-m4a', 'audio/ogg']
+    allowed_extensions = ['.wav', '.mp3', '.flac', '.m4a', '.ogg']
+    
+    if file.content_type not in allowed_types:
+        # Also check file extension as backup
+        file_extension = '.' + file.filename.split('.')[-1].lower() if '.' in file.filename else ''
+        if file_extension not in allowed_extensions:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only WAV, MP3, FLAC, M4A, and OGG files are allowed.")
+    
+    # Validate file size (50MB limit)
+    max_size = 50 * 1024 * 1024  # 50MB
+    file_content = await file.read()
+    if len(file_content) > max_size:
+        raise HTTPException(status_code=400, detail="File size must be less than 50MB.")
+    
+    # Sanitize filename
+    safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
+    if not safe_filename or safe_filename.startswith('.'):
+        safe_filename = f"uploaded_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file.filename.split('.')[-1].lower()}"
+    
+    # Check if file already exists and create unique name if needed
+    ref_audios_path = os.path.join(project_root, "ref_audios")
+    os.makedirs(ref_audios_path, exist_ok=True)
+    
+    final_filename = safe_filename
+    counter = 1
+    while os.path.exists(os.path.join(ref_audios_path, final_filename)):
+        name, ext = os.path.splitext(safe_filename)
+        final_filename = f"{name}_{counter}{ext}"
+        counter += 1
+    
+    file_path = os.path.join(ref_audios_path, final_filename)
+    
+    try:
+        # Write file to disk
+        with open(file_path, "wb") as buffer:
+            buffer.write(file_content)
+        
+        logger.info(f"Reference audio uploaded successfully: {final_filename}")
+        
+        return {
+            "message": "File uploaded successfully",
+            "filename": final_filename,
+            "size": len(file_content)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error saving uploaded file: {e}")
+        # Clean up partial file if it exists
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="Failed to save uploaded file")
 
 @app.get("/ref-audios/")
 async def list_reference_audios():

@@ -29,9 +29,16 @@
                 <div class="input-group">
                     <label for="ref-audio-select">Reference Audio:</label>
                     <p class="setting-description">Choose the voice reference for speech generation.</p>
-                    <select id="ref-audio-select" name="ref_audio" class="ref-audio-select">
-                        <option value="">Loading available reference audios...</option>
-                    </select>
+                    <div class="ref-audio-controls">
+                        <select id="ref-audio-select" name="ref_audio" class="ref-audio-select">
+                            <option value="">Loading available reference audios...</option>
+                        </select>
+                        <button type="button" id="upload-btn" class="upload-btn">
+                            <span class="upload-icon">📁</span>
+                            Upload Audio
+                        </button>
+                        <input type="file" id="ref-audio-upload" accept=".wav,.mp3,.flac,.m4a,.ogg" multiple style="display: none;">
+                    </div>
                     
                     <div id="ref-audio-player-section" class="ref-audio-player-section" style="display: none;">
                         <audio id="ref-audio-player" controls>

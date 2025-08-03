@@ -173,6 +173,51 @@ main {
     cursor: not-allowed;
 }
 
+.ref-audio-controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+.ref-audio-controls .ref-audio-select {
+    flex: 1;
+}
+
+.upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+}
+
+.upload-btn:active {
+    transform: translateY(0);
+}
+
+.upload-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.upload-icon {
+    font-size: 1.1rem;
+}
+
 .ref-text-input {
     width: 100%;
     padding: 0.75rem;
@@ -376,5 +421,14 @@ main {
     
     #text-input {
         min-height: 100px;
+    }
+    
+    .ref-audio-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .upload-btn {
+        justify-content: center;
     }
 }
