@@ -130,6 +130,52 @@ main {
     color: #667eea;
 }
 
+.advanced-settings {
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.advanced-settings:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+.advanced-settings legend {
+    font-weight: 600;
+    color: #667eea;
+    padding: 0 0.5rem;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.advanced-settings legend::after {
+    content: "▼";
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.advanced-settings.collapsed legend::after {
+    transform: rotate(-90deg);
+}
+
+.advanced-settings.collapsed .input-group {
+    display: none;
+}
+
+.advanced-settings .input-group {
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
 .generate-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;

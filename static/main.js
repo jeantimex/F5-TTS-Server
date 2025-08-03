@@ -17,6 +17,14 @@ document.addEventListener('DOMContentLoaded', function() {
         speedValue.textContent = parseFloat(this.value).toFixed(1);
     });
 
+    // Make advanced settings collapsible
+    const advancedSettings = document.querySelector('.advanced-settings');
+    const legend = advancedSettings.querySelector('legend');
+    
+    legend.addEventListener('click', function() {
+        advancedSettings.classList.toggle('collapsed');
+    });
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
