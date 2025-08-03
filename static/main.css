@@ -201,16 +201,7 @@ main {
 
 #ref-audio-player {
     width: 100%;
-    margin-bottom: 0.5rem;
     border-radius: 4px;
-}
-
-.ref-audio-player-section .audio-info p {
-    color: #6c757d;
-    font-size: 0.9rem;
-    margin: 0;
-    text-align: center;
-    font-style: italic;
 }
 
 .advanced-settings {

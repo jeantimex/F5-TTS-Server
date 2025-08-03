@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const refTextInput = document.getElementById('ref-text-input');
     const refAudioPlayerSection = document.getElementById('ref-audio-player-section');
     const refAudioPlayer = document.getElementById('ref-audio-player');
-    const refAudioStatus = document.getElementById('ref-audio-status');
     const generateBtn = document.getElementById('generate-btn');
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
@@ -94,11 +93,9 @@ document.addEventListener('DOMContentLoaded', function() {
             refAudioPlayer.src = `/ref-audios/${encodeURIComponent(audioFilename)}`;
             refAudioPlayer.load();
             refAudioPlayerSection.style.display = 'block';
-            refAudioStatus.textContent = `Reference Audio: ${audioFilename}`;
         } else {
             refAudioPlayerSection.style.display = 'none';
             refAudioPlayer.src = '';
-            refAudioStatus.textContent = '';
         }
     }
 
