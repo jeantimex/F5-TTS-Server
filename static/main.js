@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const nfeValue = document.getElementById('nfe-value');
     const crossfadeInput = document.getElementById('crossfade-input');
     const crossfadeValue = document.getElementById('crossfade-value');
+    const removeSilenceInput = document.getElementById('remove-silence-input');
     const refAudioSelect = document.getElementById('ref-audio-select');
     const refTextInput = document.getElementById('ref-text-input');
     const refAudioPlayerSection = document.getElementById('ref-audio-player-section');
@@ -290,6 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const speed = parseFloat(speedInput.value);
         const nfeSteps = parseInt(nfeInput.value);
         const crossfadeDuration = parseFloat(crossfadeInput.value);
+        const removeSilence = removeSilenceInput.checked;
         const refText = refTextInput.value.trim();
         
         if (!text) {
@@ -313,6 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     speed: speed,
                     nfe_steps: nfeSteps,
                     crossfade_duration: crossfadeDuration,
+                    remove_silence: removeSilence,
                     ref_audio: selectedRefAudio,
                     ref_text: refText
                 })

@@ -295,6 +295,27 @@ main {
     margin-bottom: 0;
 }
 
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.remove-silence-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #667eea;
+    cursor: pointer;
+}
+
+.checkbox-container label {
+    margin: 0;
+    cursor: pointer;
+    font-weight: 600;
+    color: #555;
+    font-size: 1.1rem;
+}
+
 .generate-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;

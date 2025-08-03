@@ -76,7 +76,8 @@ class TTSRequest(BaseModel):
     speed: float = 1.0
     nfe_steps: int = 32
     crossfade_duration: float = 0.15
-    ref_audio: str = "basic_ref_en.wav"
+    remove_silence: bool = False
+    ref_audio: str = "default/basic_ref_en.wav"
     ref_text: str = ""
 
 @app.get("/", response_class=HTMLResponse)
@@ -251,6 +252,7 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"Speed setting: {request.speed}x")
     logger.info(f"NFE steps: {request.nfe_steps}")
     logger.info(f"Cross-fade duration: {request.crossfade_duration}s")
+    logger.info(f"Remove silence: {request.remove_silence}")
     logger.info(f"Reference audio: {request.ref_audio}")
     logger.info(f"Reference text: '{request.ref_text[:50]}{'...' if len(request.ref_text) > 50 else ''}'" if request.ref_text else "Reference text: (auto-transcribe)")
     
@@ -318,6 +320,11 @@ async def text_to_speech(request: TTSRequest):
     # Add reference text if available (either provided or generated)
     if processed_ref_text:
         command.extend(["--ref_text", processed_ref_text])
+    
+    # Add remove silence flag if enabled
+    if request.remove_silence:
+        command.append("--remove_silence")
+        logger.info("Added --remove_silence flag to F5-TTS command")
 
     logger.info(f"Executing TTS command: {' '.join(command)}")
     logger.info("Starting TTS generation...")
