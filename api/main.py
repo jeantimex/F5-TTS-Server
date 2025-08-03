@@ -2,6 +2,8 @@ import subprocess
 import logging
 import time
 import re
+import uuid
+import threading
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +25,10 @@ except ImportError:
     logger_f5 = None
 
 project_root = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+
+# Global dictionary to track running TTS processes
+running_processes = {}
+process_lock = threading.Lock()
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +87,7 @@ class TTSRequest(BaseModel):
     seed: int | None = None
     ref_audio: str = "default/basic_ref_en.wav"
     ref_text: str = ""
+    request_id: str | None = None
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
@@ -278,6 +285,53 @@ async def upload_text_file(file: UploadFile = File(...)):
             os.remove(file_path)
         raise HTTPException(status_code=500, detail="Failed to save uploaded text file")
 
+@app.delete("/delete-ref-audio/{file_path:path}")
+async def delete_reference_audio(file_path: str):
+    """Delete a reference audio file (only allows deleting custom files)"""
+    
+    # Security check - only allow deleting files from the custom folder
+    if not file_path.startswith("custom/"):
+        raise HTTPException(status_code=403, detail="Only custom reference audio files can be deleted")
+    
+    # Build the actual file path
+    actual_file_path = os.path.join(project_root, "ref_audios", file_path)
+    
+    # Security check - ensure the file is within the ref_audios directory
+    ref_audios_path = os.path.join(project_root, "ref_audios")
+    if not os.path.abspath(actual_file_path).startswith(os.path.abspath(ref_audios_path)):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Check if file exists
+    if not os.path.isfile(actual_file_path):
+        raise HTTPException(status_code=404, detail="Reference audio file not found")
+    
+    # Extract just the filename for extension checking
+    filename = os.path.basename(file_path)
+    audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
+    if not any(filename.lower().endswith(ext) for ext in audio_extensions):
+        raise HTTPException(status_code=400, detail="Invalid audio file format")
+    
+    try:
+        # Delete the audio file
+        os.remove(actual_file_path)
+        logger.info(f"Deleted reference audio file: {file_path}")
+        
+        # Also try to delete the corresponding .txt file if it exists
+        base_name = os.path.splitext(filename)[0]
+        txt_file_path = os.path.join(os.path.dirname(actual_file_path), f"{base_name}.txt")
+        if os.path.isfile(txt_file_path):
+            os.remove(txt_file_path)
+            logger.info(f"Deleted corresponding text file: custom/{base_name}.txt")
+        
+        return {
+            "message": "Reference audio file deleted successfully",
+            "filename": file_path
+        }
+        
+    except Exception as e:
+        logger.error(f"Error deleting reference audio file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete reference audio file")
+
 @app.get("/ref-audios/{file_path:path}")
 async def serve_reference_audio(file_path: str):
     """Serve reference audio files from default or custom folders"""
@@ -311,8 +365,11 @@ async def text_to_speech(request: TTSRequest):
     start_time = time.time()
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
     
+    # Generate or use provided request ID
+    request_id = request.request_id or str(uuid.uuid4())
+    
     # Log the incoming request
-    logger.info(f"TTS Request received - ID: {timestamp}")
+    logger.info(f"TTS Request received - ID: {timestamp}, Request ID: {request_id}")
     logger.info(f"Input text: '{request.gen_text[:100]}{'...' if len(request.gen_text) > 100 else ''}'")
     logger.info(f"Text length: {len(request.gen_text)} characters")
     logger.info(f"Speed setting: {request.speed}x")
@@ -422,20 +479,57 @@ async def text_to_speech(request: TTSRequest):
     logger.info("Starting TTS generation...")
     
     try:
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        # Start the process using Popen so we can track and terminate it
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        # Store the process in our tracking dictionary
+        with process_lock:
+            running_processes[request_id] = {
+                'process': process,
+                'timestamp': timestamp,
+                'start_time': start_time
+            }
+        
+        logger.info(f"TTS process started with PID: {process.pid}, Request ID: {request_id}")
+        
+        # Wait for the process to complete
+        stdout, stderr = process.communicate()
+        
+        # Remove from tracking dictionary when done
+        with process_lock:
+            if request_id in running_processes:
+                del running_processes[request_id]
+                logger.info(f"Removed completed process {request_id} from tracking")
+        
+        # Check if process was successful
+        if process.returncode != 0:
+            logger.error(f"TTS generation failed with return code {process.returncode}")
+            logger.error(f"TTS stderr: {stderr}")
+            logger.error(f"TTS stdout: {stdout}")
+            if process.returncode == -15:  # SIGTERM (process was killed)
+                raise HTTPException(status_code=499, detail="TTS generation was cancelled")
+            else:
+                raise HTTPException(status_code=500, detail=f"Error during TTS generation: {stderr}")
+        
         logger.info("TTS generation completed successfully")
-        if result.stdout:
-            logger.info(f"TTS stdout: {result.stdout}")
-        if result.stderr:
-            logger.info(f"TTS stderr: {result.stderr}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"TTS generation failed with return code {e.returncode}")
-        logger.error(f"TTS stderr: {e.stderr}")
-        logger.error(f"TTS stdout: {e.stdout}")
-        raise HTTPException(status_code=500, detail=f"Error during TTS generation: {e.stderr}")
+        if stdout:
+            logger.info(f"TTS stdout: {stdout}")
+        if stderr:
+            logger.info(f"TTS stderr: {stderr}")
+            
     except FileNotFoundError:
+        # Clean up tracking if command not found
+        with process_lock:
+            if request_id in running_processes:
+                del running_processes[request_id]
         logger.error("f5-tts_infer-cli command not found")
         raise HTTPException(status_code=500, detail="'f5-tts_infer-cli' not found. Ensure the virtual environment is activated and dependencies are installed correctly.")
+    except Exception as e:
+        # Clean up tracking on any other exception
+        with process_lock:
+            if request_id in running_processes:
+                del running_processes[request_id]
+        raise e
 
     if os.path.exists(output_path):
         final_output_path = output_path
@@ -468,7 +562,8 @@ async def text_to_speech(request: TTSRequest):
         headers = {
             "X-Generation-Time": str(generation_time),
             "X-File-Size": str(file_size),
-            "X-Used-Seed": str(used_seed)
+            "X-Used-Seed": str(used_seed),
+            "X-Request-ID": request_id
         }
         
         return StreamingResponse(iter_file(), media_type="audio/wav", headers=headers)
@@ -476,3 +571,63 @@ async def text_to_speech(request: TTSRequest):
         logger.error(f"Generated audio file not found at {output_path}")
         logger.error(f"Request {timestamp} failed - file not found")
         raise HTTPException(status_code=404, detail="Generated audio file not found. The TTS command may have failed silently.")
+
+@app.post("/cancel-tts/{request_id}")
+async def cancel_tts_generation(request_id: str):
+    """Cancel a running TTS generation process"""
+    
+    with process_lock:
+        if request_id not in running_processes:
+            logger.info(f"Cancel request for {request_id}: Process not found (likely already completed)")
+            return {
+                "message": "TTS request not found or already completed",
+                "request_id": request_id,
+                "status": "already_completed"
+            }
+        
+        process_info = running_processes[request_id]
+        process = process_info['process']
+        
+        try:
+            # For F5-TTS inference, use immediate force kill since SIGTERM often doesn't work during inference
+            process.kill()  # Send SIGKILL directly
+            logger.info(f"Force killed TTS process with PID: {process.pid}, Request ID: {request_id}")
+            
+            # Wait for the process to be fully terminated
+            try:
+                process.wait(timeout=2)
+                logger.info(f"TTS process {process.pid} terminated successfully")
+            except subprocess.TimeoutExpired:
+                logger.warning(f"TTS process {process.pid} did not terminate within timeout")
+            
+            # Remove from tracking dictionary
+            del running_processes[request_id]
+            
+            return {
+                "message": "TTS generation cancelled successfully",
+                "request_id": request_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error cancelling TTS process {request_id}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to cancel TTS generation: {str(e)}")
+
+@app.get("/tts-status/{request_id}")
+async def get_tts_status(request_id: str):
+    """Get the status of a TTS generation request"""
+    
+    with process_lock:
+        if request_id in running_processes:
+            process_info = running_processes[request_id]
+            return {
+                "status": "running",
+                "request_id": request_id,
+                "pid": process_info['process'].pid,
+                "start_time": process_info['start_time'],
+                "timestamp": process_info['timestamp']
+            }
+        else:
+            return {
+                "status": "not_found",
+                "request_id": request_id
+            }

@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const refAudioPlayer = document.getElementById('ref-audio-player');
     const uploadBtn = document.getElementById('upload-btn');
     const refAudioUpload = document.getElementById('ref-audio-upload');
+    const deleteBtn = document.getElementById('delete-btn');
     const textUploadBtn = document.getElementById('text-upload-btn');
     const textFileUpload = document.getElementById('text-file-upload');
     const generateBtn = document.getElementById('generate-btn');
@@ -29,6 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let selectedRefAudio = 'basic_ref_en.wav'; // Default selection
     let refTexts = {}; // Store reference texts for each audio file
+    let currentTTSController = null; // Track current TTS request for cancellation
+    let currentRequestId = null; // Track current request ID for backend cancellation
 
     // Load reference audio files on page load
     loadReferenceAudios();
@@ -56,6 +59,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = e.target.files;
         if (files.length > 0) {
             uploadTextFiles(files);
+        }
+    });
+
+    // Handle delete button click
+    deleteBtn.addEventListener('click', function() {
+        if (selectedRefAudio && selectedRefAudio.startsWith('custom/')) {
+            deleteReferenceAudio(selectedRefAudio);
         }
     });
 
@@ -107,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Set initial reference text and audio player
                 updateReferenceText(selectedRefAudio);
                 updateReferenceAudioPlayer(selectedRefAudio);
+                updateDeleteButtonState(selectedRefAudio);
                 
                 refAudioSelect.disabled = false;
             } else {
@@ -127,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedRefAudio = this.value;
         updateReferenceText(selectedRefAudio);
         updateReferenceAudioPlayer(selectedRefAudio);
+        updateDeleteButtonState(selectedRefAudio);
     });
 
     // Update reference text textarea based on selected audio
@@ -152,6 +164,66 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             refAudioPlayerSection.style.display = 'none';
             refAudioPlayer.src = '';
+        }
+    }
+
+    // Update delete button state based on selected audio
+    function updateDeleteButtonState(audioFilename) {
+        // Only enable delete button for custom audio files
+        if (audioFilename && audioFilename.startsWith('custom/')) {
+            deleteBtn.disabled = false;
+            deleteBtn.style.opacity = '1';
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.style.opacity = '0.6';
+        }
+    }
+
+    // Delete a reference audio file
+    async function deleteReferenceAudio(audioFilename) {
+        if (!audioFilename || !audioFilename.startsWith('custom/')) {
+            showError('Only custom reference audio files can be deleted.');
+            return;
+        }
+
+        // Show confirmation dialog
+        const fileName = audioFilename.replace('custom/', '');
+        if (!confirm(`Are you sure you want to delete "${fileName}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        // Show loading state
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="delete-icon">⏳</span> Deleting...';
+
+        try {
+            const response = await fetch(`/delete-ref-audio/${encodeURIComponent(audioFilename)}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `Delete failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            // Success - refresh the dropdown and select default
+            await loadReferenceAudios();
+            
+            // Show success feedback
+            deleteBtn.innerHTML = '<span class="delete-icon">✅</span> Deleted!';
+            setTimeout(() => {
+                deleteBtn.innerHTML = '<span class="delete-icon">🗑️</span> Delete';
+            }, 2000);
+
+        } catch (error) {
+            console.error('Delete error:', error);
+            showError(`Failed to delete file: ${error.message}`);
+            
+            // Reset button state
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = '<span class="delete-icon">🗑️</span> Delete';
         }
     }
 
@@ -390,6 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedRefAudio = selectFilename || data.default || data.files[0];
                 updateReferenceText(selectedRefAudio);
                 updateReferenceAudioPlayer(selectedRefAudio);
+                updateDeleteButtonState(selectedRefAudio);
             }
         } catch (error) {
             console.error('Error refreshing reference audios:', error);
@@ -422,6 +495,17 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
+        // If TTS is currently running, stop it
+        if (currentTTSController) {
+            stopTTSGeneration();
+            return;
+        }
+        
+        // Start new TTS generation
+        startTTSGeneration();
+    });
+
+    async function startTTSGeneration() {
         const text = textInput.value.trim();
         const speed = parseFloat(speedInput.value);
         const nfeSteps = parseInt(nfeInput.value);
@@ -436,10 +520,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Generate new request ID and create AbortController
+        currentRequestId = generateUUID();
+        currentTTSController = new AbortController();
+
         // Show loading state
         setLoadingState(true);
         hideResults();
         hideError();
+
+        console.log(`Starting TTS generation with Request ID: ${currentRequestId}`);
 
         try {
             const response = await fetch('/tts/', {
@@ -456,8 +546,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     randomize_seed: randomizeSeed,
                     seed: seed,
                     ref_audio: selectedRefAudio,
-                    ref_text: refText
-                })
+                    ref_text: refText,
+                    request_id: currentRequestId
+                }),
+                signal: currentTTSController.signal
             });
 
             if (!response.ok) {
@@ -505,21 +597,70 @@ document.addEventListener('DOMContentLoaded', function() {
             audioStatus.textContent = `Audio generated successfully! (${formatFileSize(audioBlob.size)}) - Generated in ${formatTime(generationTime)} - Seed: ${usedSeed || 'unknown'}`;
 
         } catch (error) {
-            console.error('Error generating speech:', error);
-            showError(error.message || 'An unexpected error occurred while generating speech.');
+            if (error.name === 'AbortError') {
+                console.log('TTS generation was cancelled by user');
+                // Don't show error message for user-initiated cancellation
+            } else {
+                console.error('Error generating speech:', error);
+                showError(error.message || 'An unexpected error occurred while generating speech.');
+            }
         } finally {
+            // Clear the controller, request ID, and reset button state
+            currentTTSController = null;
+            currentRequestId = null;
             setLoadingState(false);
         }
-    });
+    }
+
+    async function stopTTSGeneration() {
+        if (currentTTSController && currentRequestId) {
+            console.log(`Stopping TTS generation... Request ID: ${currentRequestId}`);
+            
+            // First, abort the frontend request
+            currentTTSController.abort();
+            
+            // Then, try to cancel the backend process
+            try {
+                const response = await fetch(`/cancel-tts/${encodeURIComponent(currentRequestId)}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'already_completed') {
+                        console.log('TTS process already completed:', result.message);
+                    } else {
+                        console.log('Backend TTS process cancelled:', result.message);
+                    }
+                } else {
+                    console.warn('Failed to cancel backend TTS process:', response.status);
+                }
+            } catch (error) {
+                console.warn('Error cancelling backend TTS process:', error);
+            }
+            
+            // Clean up
+            currentTTSController = null;
+            currentRequestId = null;
+            setLoadingState(false);
+        }
+    }
 
     function setLoadingState(loading) {
-        generateBtn.disabled = loading;
         if (loading) {
-            btnText.style.display = 'none';
-            spinner.style.display = 'inline';
-        } else {
+            // Change to stop button
+            btnText.textContent = 'Stop Generation';
             btnText.style.display = 'inline';
             spinner.style.display = 'none';
+            generateBtn.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+            generateBtn.disabled = false; // Keep enabled so user can click to stop
+        } else {
+            // Change back to generate button
+            btnText.textContent = 'Generate Speech';
+            btnText.style.display = 'inline';
+            spinner.style.display = 'none';
+            generateBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            generateBtn.disabled = false;
         }
     }
 
@@ -545,6 +686,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function hideError() {
         errorSection.style.display = 'none';
+    }
+
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     }
 
     function formatFileSize(bytes) {

@@ -218,6 +218,42 @@ main {
     font-size: 1.1rem;
 }
 
+.delete-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.delete-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3);
+}
+
+.delete-btn:active {
+    transform: translateY(0);
+}
+
+.delete-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    background: #6c757d;
+}
+
+.delete-icon {
+    font-size: 1.1rem;
+}
+
 .ref-text-controls {
     display: flex;
     gap: 0.75rem;
@@ -536,6 +572,10 @@ main {
     }
     
     .upload-btn {
+        justify-content: center;
+    }
+    
+    .delete-btn {
         justify-content: center;
     }
     
