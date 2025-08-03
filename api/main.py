@@ -67,6 +67,7 @@ class TTSRequest(BaseModel):
     nfe_steps: int = 32
     crossfade_duration: float = 0.15
     ref_audio: str = "basic_ref_en.wav"
+    ref_text: str = ""
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
@@ -80,32 +81,56 @@ async def read_index():
 
 @app.get("/ref-audios/")
 async def list_reference_audios():
-    """List available reference audio files"""
+    """List available reference audio files with their reference text"""
     ref_audios_path = os.path.join(project_root, "ref_audios")
     
     if not os.path.exists(ref_audios_path):
-        return {"files": [], "default": "basic_ref_en.wav"}
+        return {"files": [], "default": "basic_ref_en.wav", "ref_texts": {}}
     
     try:
         # Get all audio files in the ref_audios directory
         audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
         files = []
+        ref_texts = {}
+        
+        # Known reference texts for common files
+        known_ref_texts = {
+            "basic_ref_en.wav": "Some call me nature, others call me mother nature.",
+            "basic_ref_zh.wav": "对不起我不是故意的。"
+        }
         
         for filename in os.listdir(ref_audios_path):
             if any(filename.lower().endswith(ext) for ext in audio_extensions):
                 file_path = os.path.join(ref_audios_path, filename)
                 if os.path.isfile(file_path):
                     files.append(filename)
+                    
+                    # Try to find corresponding .txt file first
+                    base_name = os.path.splitext(filename)[0]
+                    txt_file_path = os.path.join(ref_audios_path, f"{base_name}.txt")
+                    
+                    if os.path.isfile(txt_file_path):
+                        try:
+                            with open(txt_file_path, 'r', encoding='utf-8') as f:
+                                ref_texts[filename] = f.read().strip()
+                                logger.info(f"Loaded reference text from {base_name}.txt")
+                        except Exception as e:
+                            logger.error(f"Error reading {txt_file_path}: {e}")
+                            ref_texts[filename] = known_ref_texts.get(filename, "")
+                    else:
+                        # Fall back to known reference texts
+                        ref_texts[filename] = known_ref_texts.get(filename, "")
         
         files.sort()  # Sort alphabetically
         
         return {
             "files": files,
-            "default": "basic_ref_en.wav" if "basic_ref_en.wav" in files else (files[0] if files else None)
+            "default": "basic_ref_en.wav" if "basic_ref_en.wav" in files else (files[0] if files else None),
+            "ref_texts": ref_texts
         }
     except Exception as e:
         logger.error(f"Error listing reference audio files: {e}")
-        return {"files": [], "default": "basic_ref_en.wav"}
+        return {"files": [], "default": "basic_ref_en.wav", "ref_texts": {}}
 
 @app.post("/tts/")
 async def text_to_speech(request: TTSRequest):
@@ -120,6 +145,7 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"NFE steps: {request.nfe_steps}")
     logger.info(f"Cross-fade duration: {request.crossfade_duration}s")
     logger.info(f"Reference audio: {request.ref_audio}")
+    logger.info(f"Reference text: '{request.ref_text[:50]}{'...' if len(request.ref_text) > 50 else ''}'" if request.ref_text else "Reference text: (auto-transcribe)")
     
     ref_audio_path = os.path.join(project_root, "ref_audios", request.ref_audio)
     output_filename = f"{timestamp}.wav"
@@ -136,6 +162,10 @@ async def text_to_speech(request: TTSRequest):
         "-o", "output",
         "-w", output_filename
     ]
+    
+    # Add reference text if provided
+    if request.ref_text.strip():
+        command.extend(["--ref_text", request.ref_text])
 
     logger.info(f"Executing TTS command: {' '.join(command)}")
     logger.info("Starting TTS generation...")

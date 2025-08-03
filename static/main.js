@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const crossfadeInput = document.getElementById('crossfade-input');
     const crossfadeValue = document.getElementById('crossfade-value');
     const refAudioSelect = document.getElementById('ref-audio-select');
+    const refTextInput = document.getElementById('ref-text-input');
     const generateBtn = document.getElementById('generate-btn');
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('error-message');
 
     let selectedRefAudio = 'basic_ref_en.wav'; // Default selection
+    let refTexts = {}; // Store reference texts for each audio file
 
     // Load reference audio files on page load
     loadReferenceAudios();
@@ -33,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.files && data.files.length > 0) {
                 selectedRefAudio = data.default || data.files[0];
+                refTexts = data.ref_texts || {};
                 
                 // Add options to select
                 data.files.forEach(filename => {
@@ -42,6 +45,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     option.selected = filename === data.default;
                     refAudioSelect.appendChild(option);
                 });
+                
+                // Set initial reference text
+                updateReferenceText(selectedRefAudio);
                 
                 refAudioSelect.disabled = false;
             } else {
@@ -60,7 +66,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle reference audio selection change
     refAudioSelect.addEventListener('change', function() {
         selectedRefAudio = this.value;
+        updateReferenceText(selectedRefAudio);
     });
+
+    // Update reference text textarea based on selected audio
+    function updateReferenceText(audioFilename) {
+        if (refTexts[audioFilename]) {
+            refTextInput.value = refTexts[audioFilename];
+        } else {
+            refTextInput.value = '';
+        }
+    }
 
     // Update speed value display when slider changes
     speedInput.addEventListener('input', function() {
@@ -92,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const speed = parseFloat(speedInput.value);
         const nfeSteps = parseInt(nfeInput.value);
         const crossfadeDuration = parseFloat(crossfadeInput.value);
+        const refText = refTextInput.value.trim();
         
         if (!text) {
             showError('Please enter some text to convert to speech.');
@@ -114,7 +131,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     speed: speed,
                     nfe_steps: nfeSteps,
                     crossfade_duration: crossfadeDuration,
-                    ref_audio: selectedRefAudio
+                    ref_audio: selectedRefAudio,
+                    ref_text: refText
                 })
             });
 
