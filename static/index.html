@@ -26,6 +26,25 @@
                     ></textarea>
                 </div>
                 
+                <div class="input-group">
+                    <label for="speed-input">Speech Speed: <span id="speed-value">1.0</span>x</label>
+                    <input 
+                        type="range" 
+                        id="speed-input" 
+                        name="speed" 
+                        min="0.3" 
+                        max="2.0" 
+                        step="0.1" 
+                        value="1.0"
+                        class="speed-slider"
+                    >
+                    <div class="speed-labels">
+                        <span>0.3x (Slow)</span>
+                        <span>1.0x (Normal)</span>
+                        <span>2.0x (Fast)</span>
+                    </div>
+                </div>
+                
                 <button type="submit" id="generate-btn" class="generate-btn">
                     <span class="btn-text">Generate Speech</span>
                     <span class="spinner" style="display: none;">Loading...</span>
