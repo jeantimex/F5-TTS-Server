@@ -301,7 +301,8 @@ main {
     gap: 0.5rem;
 }
 
-.remove-silence-checkbox {
+.remove-silence-checkbox,
+.randomize-seed-checkbox {
     width: 18px;
     height: 18px;
     accent-color: #667eea;
@@ -314,6 +315,44 @@ main {
     font-weight: 600;
     color: #555;
     font-size: 1.1rem;
+}
+
+.seed-input-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.seed-input-container label {
+    margin: 0;
+    font-weight: 600;
+    color: #555;
+    font-size: 1rem;
+    min-width: 40px;
+}
+
+.seed-input {
+    width: 160px;
+    padding: 0.5rem;
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.seed-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.seed-input:disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+    border-color: #e9ecef;
 }
 
 .generate-btn {

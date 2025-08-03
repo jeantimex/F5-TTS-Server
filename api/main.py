@@ -77,6 +77,8 @@ class TTSRequest(BaseModel):
     nfe_steps: int = 32
     crossfade_duration: float = 0.15
     remove_silence: bool = False
+    randomize_seed: bool = True
+    seed: int | None = None
     ref_audio: str = "default/basic_ref_en.wav"
     ref_text: str = ""
 
@@ -253,6 +255,8 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"NFE steps: {request.nfe_steps}")
     logger.info(f"Cross-fade duration: {request.crossfade_duration}s")
     logger.info(f"Remove silence: {request.remove_silence}")
+    logger.info(f"Randomize seed: {request.randomize_seed}")
+    logger.info(f"Seed: {request.seed if not request.randomize_seed else 'random'}")
     logger.info(f"Reference audio: {request.ref_audio}")
     logger.info(f"Reference text: '{request.ref_text[:50]}{'...' if len(request.ref_text) > 50 else ''}'" if request.ref_text else "Reference text: (auto-transcribe)")
     
@@ -307,6 +311,30 @@ async def text_to_speech(request: TTSRequest):
                 processed_ref_text = ""
         elif not processed_ref_text:
             logger.info("No reference text available from any source")
+
+    # Handle seed setting for reproducibility
+    if request.randomize_seed:
+        # Generate random seed like F5-TTS does
+        import numpy as np
+        used_seed = np.random.randint(0, 2**31 - 1)
+        logger.info(f"Generated random seed: {used_seed}")
+    else:
+        # Use provided seed, with validation
+        if request.seed is None or request.seed < 0 or request.seed > 2**31 - 1:
+            logger.warning(f"Invalid seed {request.seed}, using random seed instead")
+            import numpy as np
+            used_seed = np.random.randint(0, 2**31 - 1)
+        else:
+            used_seed = request.seed
+        logger.info(f"Using specified seed: {used_seed}")
+    
+    # Set PyTorch seed for reproducibility
+    try:
+        import torch
+        torch.manual_seed(used_seed)
+        logger.info(f"Set PyTorch manual seed to: {used_seed}")
+    except ImportError:
+        logger.warning("PyTorch not available for seed setting")
 
     command = [
         "f5-tts_infer-cli",
@@ -372,10 +400,11 @@ async def text_to_speech(request: TTSRequest):
             with open(final_output_path, "rb") as file_like:
                 yield from file_like
         
-        # Add generation time to response headers
+        # Add generation time and seed to response headers
         headers = {
             "X-Generation-Time": str(generation_time),
-            "X-File-Size": str(file_size)
+            "X-File-Size": str(file_size),
+            "X-Used-Seed": str(used_seed)
         }
         
         return StreamingResponse(iter_file(), media_type="audio/wav", headers=headers)

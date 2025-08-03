@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const crossfadeInput = document.getElementById('crossfade-input');
     const crossfadeValue = document.getElementById('crossfade-value');
     const removeSilenceInput = document.getElementById('remove-silence-input');
+    const randomizeSeedInput = document.getElementById('randomize-seed-input');
+    const seedInput = document.getElementById('seed-input');
     const refAudioSelect = document.getElementById('ref-audio-select');
     const refTextInput = document.getElementById('ref-text-input');
     const refAudioPlayerSection = document.getElementById('ref-audio-player-section');
@@ -39,6 +41,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = e.target.files;
         if (files.length > 0) {
             uploadReferenceAudios(files);
+        }
+    });
+
+    // Initialize seed input state based on checkbox
+    seedInput.disabled = randomizeSeedInput.checked;
+
+    // Handle randomize seed checkbox change
+    randomizeSeedInput.addEventListener('change', function() {
+        seedInput.disabled = this.checked;
+        if (this.checked) {
+            // When randomizing, show placeholder to indicate it will be auto-generated
+            seedInput.style.opacity = '0.6';
+        } else {
+            // When using custom seed, make it fully visible and focusable
+            seedInput.style.opacity = '1';
+            seedInput.focus();
         }
     });
 
@@ -292,6 +310,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const nfeSteps = parseInt(nfeInput.value);
         const crossfadeDuration = parseFloat(crossfadeInput.value);
         const removeSilence = removeSilenceInput.checked;
+        const randomizeSeed = randomizeSeedInput.checked;
+        const seed = randomizeSeed ? null : (seedInput.value ? parseInt(seedInput.value) : null);
         const refText = refTextInput.value.trim();
         
         if (!text) {
@@ -316,6 +336,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     nfe_steps: nfeSteps,
                     crossfade_duration: crossfadeDuration,
                     remove_silence: removeSilence,
+                    randomize_seed: randomizeSeed,
+                    seed: seed,
                     ref_audio: selectedRefAudio,
                     ref_text: refText
                 })
@@ -333,8 +355,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Received empty audio file');
             }
 
-            // Get generation time from response headers
+            // Get generation time and seed from response headers
             const generationTime = parseFloat(response.headers.get('X-Generation-Time')) || 0;
+            const usedSeed = response.headers.get('X-Used-Seed');
 
             // Clean up previous audio URL if it exists
             if (audioPlayer.src && audioPlayer.src.startsWith('blob:')) {
@@ -348,9 +371,21 @@ document.addEventListener('DOMContentLoaded', function() {
             audioPlayer.src = audioUrl;
             audioPlayer.load();
             
+            // Update seed input field with the actual seed used
+            if (usedSeed) {
+                seedInput.value = usedSeed;
+                // Add visual feedback that the seed was updated
+                if (randomizeSeed) {
+                    seedInput.style.backgroundColor = '#e8f4fd';
+                    setTimeout(() => {
+                        seedInput.style.backgroundColor = '';
+                    }, 2000);
+                }
+            }
+
             // Show results
             showResults();
-            audioStatus.textContent = `Audio generated successfully! (${formatFileSize(audioBlob.size)}) - Generated in ${formatTime(generationTime)}`;
+            audioStatus.textContent = `Audio generated successfully! (${formatFileSize(audioBlob.size)}) - Generated in ${formatTime(generationTime)} - Seed: ${usedSeed || 'unknown'}`;
 
         } catch (error) {
             console.error('Error generating speech:', error);

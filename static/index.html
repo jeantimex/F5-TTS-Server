@@ -134,6 +134,32 @@
                         </div>
                         <p class="setting-description">If undesired long silence(s) produced, turn on to automatically detect and crop.</p>
                     </div>
+                    
+                    <div class="input-group">
+                        <div class="checkbox-container">
+                            <input 
+                                type="checkbox" 
+                                id="randomize-seed-input" 
+                                name="randomize_seed" 
+                                class="randomize-seed-checkbox"
+                                checked
+                            >
+                            <label for="randomize-seed-input">Randomize Seed</label>
+                        </div>
+                        <p class="setting-description">Check to use a random seed for each generation. Uncheck to use the seed specified.</p>
+                        <div class="seed-input-container">
+                            <label for="seed-input">Seed:</label>
+                            <input 
+                                type="number" 
+                                id="seed-input" 
+                                name="seed" 
+                                min="0" 
+                                max="2147483647" 
+                                class="seed-input"
+                                placeholder=""
+                            >
+                        </div>
+                    </div>
                 </fieldset>
                 
                 <button type="submit" id="generate-btn" class="generate-btn">
