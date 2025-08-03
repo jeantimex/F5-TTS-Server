@@ -68,6 +68,26 @@
                             <span>64 (High Quality)</span>
                         </div>
                     </div>
+                    
+                    <div class="input-group">
+                        <label for="crossfade-input">Cross-Fade Duration (s): <span id="crossfade-value">0.15</span></label>
+                        <p class="setting-description">Set the duration of the cross-fade between audio clips.</p>
+                        <input 
+                            type="range" 
+                            id="crossfade-input" 
+                            name="crossfade_duration" 
+                            min="0" 
+                            max="1" 
+                            step="0.01" 
+                            value="0.15"
+                            class="crossfade-slider"
+                        >
+                        <div class="crossfade-labels">
+                            <span>0s (None)</span>
+                            <span>0.15s (Default)</span>
+                            <span>1s (Long)</span>
+                        </div>
+                    </div>
                 </fieldset>
                 
                 <button type="submit" id="generate-btn" class="generate-btn">

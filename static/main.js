@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const speedValue = document.getElementById('speed-value');
     const nfeInput = document.getElementById('nfe-input');
     const nfeValue = document.getElementById('nfe-value');
+    const crossfadeInput = document.getElementById('crossfade-input');
+    const crossfadeValue = document.getElementById('crossfade-value');
     const generateBtn = document.getElementById('generate-btn');
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
@@ -24,6 +26,11 @@ document.addEventListener('DOMContentLoaded', function() {
         nfeValue.textContent = this.value;
     });
 
+    // Update crossfade value display when slider changes
+    crossfadeInput.addEventListener('input', function() {
+        crossfadeValue.textContent = parseFloat(this.value).toFixed(2);
+    });
+
     // Make advanced settings collapsible
     const advancedSettings = document.querySelector('.advanced-settings');
     const legend = advancedSettings.querySelector('legend');
@@ -38,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const text = textInput.value.trim();
         const speed = parseFloat(speedInput.value);
         const nfeSteps = parseInt(nfeInput.value);
+        const crossfadeDuration = parseFloat(crossfadeInput.value);
         
         if (!text) {
             showError('Please enter some text to convert to speech.');
@@ -58,7 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     gen_text: text,
                     speed: speed,
-                    nfe_steps: nfeSteps
+                    nfe_steps: nfeSteps,
+                    crossfade_duration: crossfadeDuration
                 })
             });
 
