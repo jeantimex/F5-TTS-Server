@@ -218,6 +218,16 @@ main {
     font-size: 1.1rem;
 }
 
+.ref-text-controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+.ref-text-controls .ref-text-input {
+    flex: 1;
+}
+
 .ref-text-input {
     width: 100%;
     padding: 0.75rem;
@@ -234,6 +244,38 @@ main {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.text-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #6f42c1 0%, #8e24aa 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    align-self: flex-start;
+}
+
+.text-upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(111, 66, 193, 0.3);
+}
+
+.text-upload-btn:active {
+    transform: translateY(0);
+}
+
+.text-upload-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .ref-audio-player-section {
@@ -488,7 +530,16 @@ main {
         gap: 0.5rem;
     }
     
+    .ref-text-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
     .upload-btn {
+        justify-content: center;
+    }
+    
+    .text-upload-btn {
         justify-content: center;
     }
 }

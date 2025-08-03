@@ -214,6 +214,70 @@ async def upload_reference_audio(file: UploadFile = File(...)):
             os.remove(file_path)
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
 
+@app.post("/upload-text-file/")
+async def upload_text_file(file: UploadFile = File(...)):
+    """Upload a text file to the ref_audios/custom folder"""
+    
+    # Validate file type - only .txt files allowed
+    if not file.filename.lower().endswith('.txt'):
+        raise HTTPException(status_code=400, detail="Invalid file type. Only TXT files are allowed.")
+    
+    # Validate file size (10MB limit for text files)
+    max_size = 10 * 1024 * 1024  # 10MB
+    file_content = await file.read()
+    if len(file_content) > max_size:
+        raise HTTPException(status_code=400, detail="File size must be less than 10MB.")
+    
+    # Validate that it's actually text content
+    try:
+        text_content = file_content.decode('utf-8')
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File must contain valid UTF-8 text.")
+    
+    # Sanitize filename
+    safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
+    if not safe_filename or safe_filename.startswith('.'):
+        safe_filename = f"uploaded_text_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    
+    # Ensure .txt extension
+    if not safe_filename.lower().endswith('.txt'):
+        safe_filename += '.txt'
+    
+    # Check if file already exists and create unique name if needed
+    ref_audios_path = os.path.join(project_root, "ref_audios")
+    custom_folder_path = os.path.join(ref_audios_path, "custom")
+    os.makedirs(custom_folder_path, exist_ok=True)
+    
+    final_filename = safe_filename
+    counter = 1
+    while os.path.exists(os.path.join(custom_folder_path, final_filename)):
+        name, ext = os.path.splitext(safe_filename)
+        final_filename = f"{name}_{counter}{ext}"
+        counter += 1
+    
+    file_path = os.path.join(custom_folder_path, final_filename)
+    
+    try:
+        # Write text file to disk
+        with open(file_path, "w", encoding="utf-8") as buffer:
+            buffer.write(text_content)
+        
+        logger.info(f"Text file uploaded successfully: custom/{final_filename}")
+        
+        return {
+            "message": "Text file uploaded successfully",
+            "filename": final_filename,
+            "content": text_content,
+            "size": len(file_content)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error saving uploaded text file: {e}")
+        # Clean up partial file if it exists
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="Failed to save uploaded text file")
+
 @app.get("/ref-audios/{file_path:path}")
 async def serve_reference_audio(file_path: str):
     """Serve reference audio files from default or custom folders"""

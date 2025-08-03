@@ -49,14 +49,21 @@
                 
                 <div class="input-group">
                     <label for="ref-text-input">Reference Text (Optional):</label>
-                    <p class="setting-description">Provide the transcription of the reference audio.</p>
-                    <textarea 
-                        id="ref-text-input" 
-                        name="ref_text" 
-                        placeholder="Enter the text spoken in the reference audio (leave empty for automatic generation)..."
-                        rows="2"
-                        class="ref-text-input"
-                    ></textarea>
+                    <p class="setting-description">Provide the transcription of the reference audio or upload a text file.</p>
+                    <div class="ref-text-controls">
+                        <textarea 
+                            id="ref-text-input" 
+                            name="ref_text" 
+                            placeholder="Enter the text spoken in the reference audio (leave empty for automatic generation)..."
+                            rows="2"
+                            class="ref-text-input"
+                        ></textarea>
+                        <button type="button" id="text-upload-btn" class="text-upload-btn">
+                            <span class="upload-icon">📄</span>
+                            Upload Text
+                        </button>
+                        <input type="file" id="text-file-upload" accept=".txt" multiple style="display: none;">
+                    </div>
                 </div>
                 
                 <fieldset class="advanced-settings collapsed">

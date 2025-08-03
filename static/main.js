@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const refAudioPlayer = document.getElementById('ref-audio-player');
     const uploadBtn = document.getElementById('upload-btn');
     const refAudioUpload = document.getElementById('ref-audio-upload');
+    const textUploadBtn = document.getElementById('text-upload-btn');
+    const textFileUpload = document.getElementById('text-file-upload');
     const generateBtn = document.getElementById('generate-btn');
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
@@ -41,6 +43,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = e.target.files;
         if (files.length > 0) {
             uploadReferenceAudios(files);
+        }
+    });
+
+    // Handle text upload button click
+    textUploadBtn.addEventListener('click', function() {
+        textFileUpload.click();
+    });
+
+    // Handle text file selection for upload
+    textFileUpload.addEventListener('change', function(e) {
+        const files = e.target.files;
+        if (files.length > 0) {
+            uploadTextFiles(files);
         }
     });
 
@@ -240,6 +255,108 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show any errors
         if (uploadErrors.length > 0) {
             showError('Some uploads failed:\n' + uploadErrors.join('\n'));
+        }
+    }
+
+    // Upload multiple text files
+    async function uploadTextFiles(files) {
+        const maxSize = 10 * 1024 * 1024; // 10MB per file
+        
+        // Validate all files first
+        const validFiles = [];
+        const errors = [];
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            // Check file type
+            if (!file.name.toLowerCase().endsWith('.txt')) {
+                errors.push(`${file.name}: Invalid file type. Only TXT files are allowed.`);
+                continue;
+            }
+            
+            // Check file size
+            if (file.size > maxSize) {
+                errors.push(`${file.name}: File size must be less than 10MB.`);
+                continue;
+            }
+            
+            validFiles.push(file);
+        }
+        
+        // Show errors if any
+        if (errors.length > 0) {
+            showError('Upload errors:\n' + errors.join('\n'));
+            textFileUpload.value = ''; // Clear the input
+            return;
+        }
+        
+        if (validFiles.length === 0) {
+            showError('No valid text files selected for upload.');
+            textFileUpload.value = '';
+            return;
+        }
+        
+        // Show upload progress
+        textUploadBtn.disabled = true;
+        textUploadBtn.innerHTML = '<span class="upload-icon">⏳</span> Uploading...';
+        
+        const uploadResults = [];
+        const uploadErrors = [];
+        let lastUploadedContent = '';
+        
+        // Upload files one by one
+        for (let i = 0; i < validFiles.length; i++) {
+            const file = validFiles[i];
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/upload-text-file/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `Upload failed with status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                uploadResults.push(result.filename);
+                lastUploadedContent = result.content; // Keep the content from the last uploaded file
+                
+            } catch (error) {
+                console.error(`Upload error for ${file.name}:`, error);
+                uploadErrors.push(`${file.name}: ${error.message}`);
+            }
+        }
+        
+        // Reset upload button
+        textUploadBtn.disabled = false;
+        textUploadBtn.innerHTML = '<span class="upload-icon">📄</span> Upload Text';
+        textFileUpload.value = ''; // Clear the input
+        
+        // Show results and update textarea
+        if (uploadResults.length > 0) {
+            // Update the reference text textarea with the content from the last uploaded file
+            refTextInput.value = lastUploadedContent;
+            
+            // Show success message
+            const successMsg = uploadResults.length === 1 
+                ? `Successfully uploaded: ${uploadResults[0]}` 
+                : `Successfully uploaded ${uploadResults.length} files: ${uploadResults.join(', ')}`;
+            
+            // Temporarily show success in upload button
+            textUploadBtn.innerHTML = '<span class="upload-icon">✅</span> Success!';
+            setTimeout(() => {
+                textUploadBtn.innerHTML = '<span class="upload-icon">📄</span> Upload Text';
+            }, 2000);
+        }
+        
+        // Show any errors
+        if (uploadErrors.length > 0) {
+            showError('Some text file uploads failed:\n' + uploadErrors.join('\n'));
         }
     }
 
