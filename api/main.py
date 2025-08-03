@@ -96,7 +96,7 @@ async def list_reference_audios():
         # Known reference texts for common files
         known_ref_texts = {
             "basic_ref_en.wav": "Some call me nature, others call me mother nature.",
-            "basic_ref_zh.wav": "对不起我不是故意的。"
+            "basic_ref_zh.wav": "对，这就是我，万人敬仰的太乙真人。"
         }
         
         for filename in os.listdir(ref_audios_path):
