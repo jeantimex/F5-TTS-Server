@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const textInput = document.getElementById('text-input');
     const speedInput = document.getElementById('speed-input');
     const speedValue = document.getElementById('speed-value');
+    const nfeInput = document.getElementById('nfe-input');
+    const nfeValue = document.getElementById('nfe-value');
     const generateBtn = document.getElementById('generate-btn');
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
@@ -15,6 +17,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update speed value display when slider changes
     speedInput.addEventListener('input', function() {
         speedValue.textContent = parseFloat(this.value).toFixed(1);
+    });
+
+    // Update NFE value display when slider changes
+    nfeInput.addEventListener('input', function() {
+        nfeValue.textContent = this.value;
     });
 
     // Make advanced settings collapsible
@@ -30,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const text = textInput.value.trim();
         const speed = parseFloat(speedInput.value);
+        const nfeSteps = parseInt(nfeInput.value);
         
         if (!text) {
             showError('Please enter some text to convert to speech.');
@@ -49,7 +57,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({
                     gen_text: text,
-                    speed: speed
+                    speed: speed,
+                    nfe_steps: nfeSteps
                 })
             });
 

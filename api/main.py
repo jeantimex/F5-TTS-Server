@@ -64,6 +64,7 @@ async def startup_event():
 class TTSRequest(BaseModel):
     gen_text: str
     speed: float = 1.0
+    nfe_steps: int = 32
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
@@ -85,6 +86,7 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"Input text: '{request.gen_text[:100]}{'...' if len(request.gen_text) > 100 else ''}'")
     logger.info(f"Text length: {len(request.gen_text)} characters")
     logger.info(f"Speed setting: {request.speed}x")
+    logger.info(f"NFE steps: {request.nfe_steps}")
     
     ref_audio_path = os.path.join(project_root, "ref_audios", "basic_ref_en.wav")
     output_filename = f"{timestamp}.wav"

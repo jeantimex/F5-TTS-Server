@@ -31,6 +31,7 @@
                     
                     <div class="input-group">
                         <label for="speed-input">Speech Speed: <span id="speed-value">1.0</span>x</label>
+                        <p class="setting-description">Adjust the speed of the audio.</p>
                         <input 
                             type="range" 
                             id="speed-input" 
@@ -45,6 +46,26 @@
                             <span>0.3x (Slow)</span>
                             <span>1.0x (Normal)</span>
                             <span>2.0x (Fast)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="nfe-input">NFE Steps: <span id="nfe-value">32</span></label>
+                        <p class="setting-description">Set the number of denoising steps.</p>
+                        <input 
+                            type="range" 
+                            id="nfe-input" 
+                            name="nfe_steps" 
+                            min="4" 
+                            max="64" 
+                            step="1" 
+                            value="32"
+                            class="nfe-slider"
+                        >
+                        <div class="nfe-labels">
+                            <span>4 (Fast)</span>
+                            <span>32 (Default)</span>
+                            <span>64 (High Quality)</span>
                         </div>
                     </div>
                 </fieldset>
