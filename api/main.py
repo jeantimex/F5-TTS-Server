@@ -12,6 +12,15 @@ import io
 import wave
 import tempfile
 
+# Import F5-TTS preprocessing function
+try:
+    from f5_tts.infer.utils_infer import preprocess_ref_audio_text
+    F5_TTS_AVAILABLE = True
+    logger_f5 = logging.getLogger("f5_tts_preprocessing")
+except ImportError:
+    F5_TTS_AVAILABLE = False
+    logger_f5 = None
+
 project_root = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
 # Configure logging
@@ -154,18 +163,55 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"Using reference audio: {ref_audio_path}")
     logger.info(f"Output file: {output_path}")
 
+    # Reference text priority: user textarea > .txt file > F5-TTS preprocessing
+    processed_ref_audio = ref_audio_path
+    processed_ref_text = request.ref_text.strip()
+    
+    if processed_ref_text:
+        # Priority 1: User provided reference text in textarea
+        logger.info("Using user-provided reference text from textarea")
+    else:
+        # Priority 2: Try to find corresponding .txt file
+        base_name = os.path.splitext(request.ref_audio)[0]
+        txt_file_path = os.path.join(project_root, "ref_audios", f"{base_name}.txt")
+        
+        if os.path.isfile(txt_file_path):
+            try:
+                with open(txt_file_path, 'r', encoding='utf-8') as f:
+                    processed_ref_text = f.read().strip()
+                logger.info(f"Using reference text from {base_name}.txt file")
+            except Exception as e:
+                logger.warning(f"Error reading {txt_file_path}: {e}")
+                processed_ref_text = ""
+        
+        # Priority 3: Use F5-TTS preprocessing if no .txt file or reading failed
+        if not processed_ref_text and F5_TTS_AVAILABLE:
+            try:
+                logger.info("No reference text found, using F5-TTS preprocessing to generate it")
+                processed_ref_audio, processed_ref_text = preprocess_ref_audio_text(
+                    ref_audio_path, 
+                    "", 
+                    show_info=logger.info
+                )
+                logger.info(f"F5-TTS generated reference text: '{processed_ref_text[:100]}{'...' if len(processed_ref_text) > 100 else ''}'")
+            except Exception as e:
+                logger.warning(f"F5-TTS preprocessing failed: {e}, proceeding without reference text")
+                processed_ref_text = ""
+        elif not processed_ref_text:
+            logger.info("No reference text available from any source")
+
     command = [
         "f5-tts_infer-cli",
         "--model", "F5TTS_v1_Base",
-        "--ref_audio", ref_audio_path,
+        "--ref_audio", processed_ref_audio,
         "--gen_text", request.gen_text,
         "-o", "output",
         "-w", output_filename
     ]
     
-    # Add reference text if provided
-    if request.ref_text.strip():
-        command.extend(["--ref_text", request.ref_text])
+    # Add reference text if available (either provided or generated)
+    if processed_ref_text:
+        command.extend(["--ref_text", processed_ref_text])
 
     logger.info(f"Executing TTS command: {' '.join(command)}")
     logger.info("Starting TTS generation...")
