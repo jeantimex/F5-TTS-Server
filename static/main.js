@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const crossfadeValue = document.getElementById('crossfade-value');
     const refAudioSelect = document.getElementById('ref-audio-select');
     const refTextInput = document.getElementById('ref-text-input');
+    const refAudioPlayerSection = document.getElementById('ref-audio-player-section');
+    const refAudioPlayer = document.getElementById('ref-audio-player');
+    const refAudioStatus = document.getElementById('ref-audio-status');
     const generateBtn = document.getElementById('generate-btn');
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
@@ -46,8 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     refAudioSelect.appendChild(option);
                 });
                 
-                // Set initial reference text
+                // Set initial reference text and audio player
                 updateReferenceText(selectedRefAudio);
+                updateReferenceAudioPlayer(selectedRefAudio);
                 
                 refAudioSelect.disabled = false;
             } else {
@@ -67,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     refAudioSelect.addEventListener('change', function() {
         selectedRefAudio = this.value;
         updateReferenceText(selectedRefAudio);
+        updateReferenceAudioPlayer(selectedRefAudio);
     });
 
     // Update reference text textarea based on selected audio
@@ -75,6 +80,25 @@ document.addEventListener('DOMContentLoaded', function() {
             refTextInput.value = refTexts[audioFilename];
         } else {
             refTextInput.value = '';
+        }
+    }
+
+    // Update reference audio player based on selected audio
+    function updateReferenceAudioPlayer(audioFilename) {
+        if (audioFilename && audioFilename !== '') {
+            // Clean up previous audio URL if it exists
+            if (refAudioPlayer.src && refAudioPlayer.src.startsWith('blob:')) {
+                URL.revokeObjectURL(refAudioPlayer.src);
+            }
+            
+            refAudioPlayer.src = `/ref-audios/${encodeURIComponent(audioFilename)}`;
+            refAudioPlayer.load();
+            refAudioPlayerSection.style.display = 'block';
+            refAudioStatus.textContent = `Reference Audio: ${audioFilename}`;
+        } else {
+            refAudioPlayerSection.style.display = 'none';
+            refAudioPlayer.src = '';
+            refAudioStatus.textContent = '';
         }
     }
 

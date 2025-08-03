@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -87,6 +87,27 @@ async def read_index():
         raise HTTPException(status_code=404, detail="Index file not found")
     except UnicodeDecodeError:
         raise HTTPException(status_code=500, detail="Error reading index file")
+
+@app.get("/ref-audios/{filename}")
+async def serve_reference_audio(filename: str):
+    """Serve reference audio files"""
+    ref_audios_path = os.path.join(project_root, "ref_audios")
+    file_path = os.path.join(ref_audios_path, filename)
+    
+    # Security check - ensure the file is within the ref_audios directory
+    if not os.path.abspath(file_path).startswith(os.path.abspath(ref_audios_path)):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Check if file exists and is a valid audio file
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Reference audio file not found")
+    
+    # Check file extension
+    audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
+    if not any(filename.lower().endswith(ext) for ext in audio_extensions):
+        raise HTTPException(status_code=400, detail="Invalid audio file format")
+    
+    return FileResponse(file_path, media_type="audio/wav", filename=filename)
 
 @app.get("/ref-audios/")
 async def list_reference_audios():

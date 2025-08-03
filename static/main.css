@@ -191,6 +191,28 @@ main {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.ref-audio-player-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-top: 1rem;
+}
+
+#ref-audio-player {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.ref-audio-player-section .audio-info p {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+    font-style: italic;
+}
+
 .advanced-settings {
     border: 2px solid #e1e5e9;
     border-radius: 8px;

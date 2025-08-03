@@ -32,6 +32,15 @@
                     <select id="ref-audio-select" name="ref_audio" class="ref-audio-select">
                         <option value="">Loading available reference audios...</option>
                     </select>
+                    
+                    <div id="ref-audio-player-section" class="ref-audio-player-section" style="display: none;">
+                        <audio id="ref-audio-player" controls>
+                            Your browser does not support the audio element.
+                        </audio>
+                        <div class="audio-info">
+                            <p id="ref-audio-status"></p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="input-group">
