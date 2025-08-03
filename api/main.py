@@ -89,26 +89,68 @@ async def read_index():
     except UnicodeDecodeError:
         raise HTTPException(status_code=500, detail="Error reading index file")
 
-@app.get("/ref-audios/{filename}")
-async def serve_reference_audio(filename: str):
-    """Serve reference audio files"""
+@app.get("/ref-audios/")
+async def list_reference_audios():
+    """List available reference audio files from both default and custom folders"""
     ref_audios_path = os.path.join(project_root, "ref_audios")
-    file_path = os.path.join(ref_audios_path, filename)
     
-    # Security check - ensure the file is within the ref_audios directory
-    if not os.path.abspath(file_path).startswith(os.path.abspath(ref_audios_path)):
-        raise HTTPException(status_code=403, detail="Access denied")
+    if not os.path.exists(ref_audios_path):
+        return {"files": [], "default": "default/basic_ref_en.wav", "ref_texts": {}}
     
-    # Check if file exists and is a valid audio file
-    if not os.path.isfile(file_path):
-        raise HTTPException(status_code=404, detail="Reference audio file not found")
-    
-    # Check file extension
-    audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
-    if not any(filename.lower().endswith(ext) for ext in audio_extensions):
-        raise HTTPException(status_code=400, detail="Invalid audio file format")
-    
-    return FileResponse(file_path, media_type="audio/wav", filename=filename)
+    try:
+        # Get all audio files from both default and custom directories
+        audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
+        files = []
+        ref_texts = {}
+        
+        # Known reference texts for common files
+        known_ref_texts = {
+            "default/basic_ref_en.wav": "Some call me nature, others call me mother nature.",
+            "default/basic_ref_zh.wav": "对，这就是我，万人敬仰的太乙真人。"
+        }
+        
+        # Scan both default and custom folders
+        folders_to_scan = ["default", "custom"]
+        
+        for folder in folders_to_scan:
+            folder_path = os.path.join(ref_audios_path, folder)
+            if not os.path.exists(folder_path):
+                continue
+                
+            for filename in os.listdir(folder_path):
+                if any(filename.lower().endswith(ext) for ext in audio_extensions):
+                    file_path = os.path.join(folder_path, filename)
+                    if os.path.isfile(file_path):
+                        # Store with folder prefix for identification
+                        file_key = f"{folder}/{filename}"
+                        files.append(file_key)
+                        
+                        # Try to find corresponding .txt file first
+                        base_name = os.path.splitext(filename)[0]
+                        txt_file_path = os.path.join(folder_path, f"{base_name}.txt")
+                        
+                        if os.path.isfile(txt_file_path):
+                            try:
+                                with open(txt_file_path, 'r', encoding='utf-8') as f:
+                                    ref_texts[file_key] = f.read().strip()
+                                    logger.info(f"Loaded reference text from {folder}/{base_name}.txt")
+                            except Exception as e:
+                                logger.error(f"Error reading {txt_file_path}: {e}")
+                                ref_texts[file_key] = known_ref_texts.get(file_key, "")
+                        else:
+                            # Fall back to known reference texts
+                            ref_texts[file_key] = known_ref_texts.get(file_key, "")
+        
+        files.sort()  # Sort alphabetically
+        
+        return {
+            "files": files,
+            "default": "default/basic_ref_en.wav" if "default/basic_ref_en.wav" in files else (files[0] if files else None),
+            "ref_texts": ref_texts
+        }
+    except Exception as e:
+        logger.error(f"Error listing reference audio files: {e}")
+        return {"files": [], "default": "default/basic_ref_en.wav", "ref_texts": {}}
 
 @app.post("/upload-ref-audio/")
 async def upload_reference_audio(file: UploadFile = File(...)):
@@ -137,27 +179,28 @@ async def upload_reference_audio(file: UploadFile = File(...)):
     
     # Check if file already exists and create unique name if needed
     ref_audios_path = os.path.join(project_root, "ref_audios")
-    os.makedirs(ref_audios_path, exist_ok=True)
+    custom_folder_path = os.path.join(ref_audios_path, "custom")
+    os.makedirs(custom_folder_path, exist_ok=True)
     
     final_filename = safe_filename
     counter = 1
-    while os.path.exists(os.path.join(ref_audios_path, final_filename)):
+    while os.path.exists(os.path.join(custom_folder_path, final_filename)):
         name, ext = os.path.splitext(safe_filename)
         final_filename = f"{name}_{counter}{ext}"
         counter += 1
     
-    file_path = os.path.join(ref_audios_path, final_filename)
+    file_path = os.path.join(custom_folder_path, final_filename)
     
     try:
         # Write file to disk
         with open(file_path, "wb") as buffer:
             buffer.write(file_content)
         
-        logger.info(f"Reference audio uploaded successfully: {final_filename}")
+        logger.info(f"Reference audio uploaded successfully: custom/{final_filename}")
         
         return {
             "message": "File uploaded successfully",
-            "filename": final_filename,
+            "filename": f"custom/{final_filename}",  # Return with folder prefix
             "size": len(file_content)
         }
         
@@ -168,58 +211,33 @@ async def upload_reference_audio(file: UploadFile = File(...)):
             os.remove(file_path)
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
 
-@app.get("/ref-audios/")
-async def list_reference_audios():
-    """List available reference audio files with their reference text"""
+@app.get("/ref-audios/{file_path:path}")
+async def serve_reference_audio(file_path: str):
+    """Serve reference audio files from default or custom folders"""
+    # Handle both "folder/filename" and just "filename" formats
+    if "/" not in file_path:
+        # Legacy format - assume it's in the root ref_audios directory (backward compatibility)
+        actual_file_path = os.path.join(project_root, "ref_audios", file_path)
+    else:
+        # New format with folder prefix
+        actual_file_path = os.path.join(project_root, "ref_audios", file_path)
+    
+    # Security check - ensure the file is within the ref_audios directory
     ref_audios_path = os.path.join(project_root, "ref_audios")
+    if not os.path.abspath(actual_file_path).startswith(os.path.abspath(ref_audios_path)):
+        raise HTTPException(status_code=403, detail="Access denied")
     
-    if not os.path.exists(ref_audios_path):
-        return {"files": [], "default": "basic_ref_en.wav", "ref_texts": {}}
+    # Check if file exists and is a valid audio file
+    if not os.path.isfile(actual_file_path):
+        raise HTTPException(status_code=404, detail="Reference audio file not found")
     
-    try:
-        # Get all audio files in the ref_audios directory
-        audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
-        files = []
-        ref_texts = {}
-        
-        # Known reference texts for common files
-        known_ref_texts = {
-            "basic_ref_en.wav": "Some call me nature, others call me mother nature.",
-            "basic_ref_zh.wav": "对，这就是我，万人敬仰的太乙真人。"
-        }
-        
-        for filename in os.listdir(ref_audios_path):
-            if any(filename.lower().endswith(ext) for ext in audio_extensions):
-                file_path = os.path.join(ref_audios_path, filename)
-                if os.path.isfile(file_path):
-                    files.append(filename)
-                    
-                    # Try to find corresponding .txt file first
-                    base_name = os.path.splitext(filename)[0]
-                    txt_file_path = os.path.join(ref_audios_path, f"{base_name}.txt")
-                    
-                    if os.path.isfile(txt_file_path):
-                        try:
-                            with open(txt_file_path, 'r', encoding='utf-8') as f:
-                                ref_texts[filename] = f.read().strip()
-                                logger.info(f"Loaded reference text from {base_name}.txt")
-                        except Exception as e:
-                            logger.error(f"Error reading {txt_file_path}: {e}")
-                            ref_texts[filename] = known_ref_texts.get(filename, "")
-                    else:
-                        # Fall back to known reference texts
-                        ref_texts[filename] = known_ref_texts.get(filename, "")
-        
-        files.sort()  # Sort alphabetically
-        
-        return {
-            "files": files,
-            "default": "basic_ref_en.wav" if "basic_ref_en.wav" in files else (files[0] if files else None),
-            "ref_texts": ref_texts
-        }
-    except Exception as e:
-        logger.error(f"Error listing reference audio files: {e}")
-        return {"files": [], "default": "basic_ref_en.wav", "ref_texts": {}}
+    # Extract just the filename for extension checking
+    filename = os.path.basename(file_path)
+    audio_extensions = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
+    if not any(filename.lower().endswith(ext) for ext in audio_extensions):
+        raise HTTPException(status_code=400, detail="Invalid audio file format")
+    
+    return FileResponse(actual_file_path, media_type="audio/wav", filename=filename)
 
 @app.post("/tts/")
 async def text_to_speech(request: TTSRequest):
@@ -236,6 +254,7 @@ async def text_to_speech(request: TTSRequest):
     logger.info(f"Reference audio: {request.ref_audio}")
     logger.info(f"Reference text: '{request.ref_text[:50]}{'...' if len(request.ref_text) > 50 else ''}'" if request.ref_text else "Reference text: (auto-transcribe)")
     
+    # Handle folder-aware ref audio paths
     ref_audio_path = os.path.join(project_root, "ref_audios", request.ref_audio)
     output_filename = f"{timestamp}.wav"
     output_path = os.path.join("output", output_filename)
@@ -252,8 +271,15 @@ async def text_to_speech(request: TTSRequest):
         logger.info("Using user-provided reference text from textarea")
     else:
         # Priority 2: Try to find corresponding .txt file
-        base_name = os.path.splitext(request.ref_audio)[0]
-        txt_file_path = os.path.join(project_root, "ref_audios", f"{base_name}.txt")
+        # Extract just the filename without folder prefix for .txt file
+        if "/" in request.ref_audio:
+            folder_path, audio_filename = request.ref_audio.split("/", 1)
+            base_name = os.path.splitext(audio_filename)[0]
+            txt_file_path = os.path.join(project_root, "ref_audios", folder_path, f"{base_name}.txt")
+        else:
+            # Legacy format
+            base_name = os.path.splitext(request.ref_audio)[0]
+            txt_file_path = os.path.join(project_root, "ref_audios", f"{base_name}.txt")
         
         if os.path.isfile(txt_file_path):
             try:

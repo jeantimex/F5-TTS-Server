@@ -58,7 +58,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.files.forEach(filename => {
                     const option = document.createElement('option');
                     option.value = filename;
-                    option.textContent = filename;
+                    // Display cleaner names: show folder prefix for organization
+                    if (filename.startsWith('default/')) {
+                        option.textContent = `📁 ${filename.replace('default/', '')} (default)`;
+                    } else if (filename.startsWith('custom/')) {
+                        option.textContent = `🎵 ${filename.replace('custom/', '')} (custom)`;
+                    } else {
+                        option.textContent = filename;
+                    }
                     option.selected = filename === data.default;
                     refAudioSelect.appendChild(option);
                 });
@@ -231,7 +238,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.files.forEach(filename => {
                     const option = document.createElement('option');
                     option.value = filename;
-                    option.textContent = filename;
+                    // Display cleaner names: show folder prefix for organization
+                    if (filename.startsWith('default/')) {
+                        option.textContent = `📁 ${filename.replace('default/', '')} (default)`;
+                    } else if (filename.startsWith('custom/')) {
+                        option.textContent = `🎵 ${filename.replace('custom/', '')} (custom)`;
+                    } else {
+                        option.textContent = filename;
+                    }
                     option.selected = filename === selectFilename || (selectFilename === null && filename === data.default);
                     refAudioSelect.appendChild(option);
                 });
