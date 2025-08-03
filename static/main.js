@@ -74,6 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Received empty audio file');
             }
 
+            // Get generation time from response headers
+            const generationTime = parseFloat(response.headers.get('X-Generation-Time')) || 0;
+
             // Clean up previous audio URL if it exists
             if (audioPlayer.src && audioPlayer.src.startsWith('blob:')) {
                 URL.revokeObjectURL(audioPlayer.src);
@@ -88,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show results
             showResults();
-            audioStatus.textContent = `Audio generated successfully! (${formatFileSize(audioBlob.size)})`;
+            audioStatus.textContent = `Audio generated successfully! (${formatFileSize(audioBlob.size)}) - Generated in ${formatTime(generationTime)}`;
 
         } catch (error) {
             console.error('Error generating speech:', error);
@@ -139,6 +142,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatTime(seconds) {
+        if (seconds < 1) {
+            return `${Math.round(seconds * 1000)}ms`;
+        } else if (seconds < 60) {
+            return `${seconds.toFixed(1)}s`;
+        } else {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = (seconds % 60).toFixed(1);
+            return `${minutes}m ${remainingSeconds}s`;
+        }
     }
 
     // Add some example text for demonstration

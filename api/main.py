@@ -150,7 +150,13 @@ async def text_to_speech(request: TTSRequest):
             with open(final_output_path, "rb") as file_like:
                 yield from file_like
         
-        return StreamingResponse(iter_file(), media_type="audio/wav")
+        # Add generation time to response headers
+        headers = {
+            "X-Generation-Time": str(generation_time),
+            "X-File-Size": str(file_size)
+        }
+        
+        return StreamingResponse(iter_file(), media_type="audio/wav", headers=headers)
     else:
         logger.error(f"Generated audio file not found at {output_path}")
         logger.error(f"Request {timestamp} failed - file not found")
