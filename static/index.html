@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>F5-TTS Demo</title>
     <link rel="stylesheet" href="/static/main.css">
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
 </head>
 <body>
     <div class="container">
@@ -44,6 +45,7 @@
                     </div>
                     
                     <div id="ref-audio-player-section" class="ref-audio-player-section" style="display: none;">
+                        <div id="ref-waveform"></div>
                         <audio id="ref-audio-player" controls>
                             Your browser does not support the audio element.
                         </audio>
@@ -180,6 +182,7 @@
             
             <div id="result-section" class="result-section" style="display: none;">
                 <h3>Generated Audio:</h3>
+                <div id="generated-waveform"></div>
                 <audio id="audio-player" controls>
                     Your browser does not support the audio element.
                 </audio>

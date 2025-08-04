@@ -582,3 +582,17 @@ main {
         justify-content: center;
     }
 }
+
+/* Waveform styling */
+#ref-waveform, #generated-waveform {
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    margin-bottom: 0.75rem;
+}
+
+#ref-audio-player, #audio-player {
+    width: 100%;
+    border-radius: 4px;
+}

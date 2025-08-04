@@ -32,7 +32,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let refTexts = {}; // Store reference texts for each audio file
     let currentTTSController = null; // Track current TTS request for cancellation
     let currentRequestId = null; // Track current request ID for backend cancellation
+    
+    // Wavesurfer instances
+    let refWavesurfer = null;
+    let genWavesurfer = null;
 
+    // Initialize wavesurfer instances
+    initializeWavesurfers();
+    
     // Load reference audio files on page load
     loadReferenceAudios();
 
@@ -150,20 +157,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Initialize wavesurfer instances
+    function initializeWavesurfers() {
+        // Reference audio wavesurfer - connect to existing audio element
+        refWavesurfer = WaveSurfer.create({
+            container: '#ref-waveform',
+            media: refAudioPlayer, // Pass the HTML5 audio element
+            waveColor: '#ff4e00',
+            progressColor: '#dd5e98',
+            cursorColor: '#ddd5e9',
+            height: 60,
+            responsive: true,
+            normalize: true,
+            cursorWidth: 2,
+            dragToSeek: true,
+            barGap: 2,
+        });
+        
+        // Generated audio wavesurfer - connect to existing audio element
+        genWavesurfer = WaveSurfer.create({
+            container: '#generated-waveform',
+            media: audioPlayer, // Pass the HTML5 audio element
+            waveColor: '#ff4e00',
+            progressColor: '#dd5e98',
+            cursorColor: '#ddd5e9',
+            height: 80,
+            responsive: true,
+            normalize: true,
+            cursorWidth: 2,
+            dragToSeek: true,
+            barGap: 2,
+        });
+    }
+    
     // Update reference audio player based on selected audio
     function updateReferenceAudioPlayer(audioFilename) {
         if (audioFilename && audioFilename !== '') {
+            const audioUrl = `/ref-audios/${encodeURIComponent(audioFilename)}`;
+            
             // Clean up previous audio URL if it exists
             if (refAudioPlayer.src && refAudioPlayer.src.startsWith('blob:')) {
                 URL.revokeObjectURL(refAudioPlayer.src);
             }
             
-            refAudioPlayer.src = `/ref-audios/${encodeURIComponent(audioFilename)}`;
+            // Set audio source - wavesurfer will automatically sync
+            refAudioPlayer.src = audioUrl;
             refAudioPlayer.load();
+            
+            // Load waveform - since media is connected, this will sync automatically
+            refWavesurfer.load(audioUrl);
+            
             refAudioPlayerSection.style.display = 'block';
         } else {
             refAudioPlayerSection.style.display = 'none';
             refAudioPlayer.src = '';
+            refWavesurfer.empty();
         }
     }
 
@@ -576,9 +624,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create object URL for the audio blob
             const audioUrl = URL.createObjectURL(audioBlob);
             
-            // Set up the audio player
+            // Set up the audio player - wavesurfer will automatically sync
             audioPlayer.src = audioUrl;
             audioPlayer.load();
+            
+            // Load waveform with the blob - since media is connected, this will sync automatically
+            genWavesurfer.loadBlob(audioBlob);
             
             // Update seed input field with the actual seed used
             if (usedSeed) {
@@ -677,6 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         audioPlayer.src = '';
+        genWavesurfer.empty();
     }
 
     function showError(message) {
