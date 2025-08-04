@@ -16,8 +16,8 @@ This project provides a web server and a user-friendly interface for the F5-TTS 
 2.  **Create and activate a virtual environment:**
 
     ```bash
-    python -m venv venv
-    source venv/bin/activate
+    python -m venv .venv
+    source .venv/bin/activate
     ```
 
 3.  **Run the start script:**
