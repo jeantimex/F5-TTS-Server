@@ -111,9 +111,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     option.value = filename;
                     // Display cleaner names: show folder prefix for organization
                     if (filename.startsWith('default/')) {
-                        option.textContent = `📁 ${filename.replace('default/', '')} (default)`;
+                        option.innerHTML = `<span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">folder</span>${filename.replace('default/', '')} (default)`;
                     } else if (filename.startsWith('custom/')) {
-                        option.textContent = `🎵 ${filename.replace('custom/', '')} (custom)`;
+                        option.innerHTML = `<span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">library_music</span>${filename.replace('custom/', '')} (custom)`;
                     } else {
                         option.textContent = filename;
                     }
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show loading state
         deleteBtn.disabled = true;
-        deleteBtn.innerHTML = '<span class="delete-icon">⏳</span> Deleting...';
+        deleteBtn.innerHTML = '<span class="delete-icon material-symbols-outlined">hourglass_top</span> Deleting...';
 
         try {
             const response = await fetch(`/delete-ref-audio/${encodeURIComponent(audioFilename)}`, {
@@ -260,9 +260,9 @@ document.addEventListener('DOMContentLoaded', function() {
             await loadReferenceAudios();
             
             // Show success feedback
-            deleteBtn.innerHTML = '<span class="delete-icon">✅</span> Deleted!';
+            deleteBtn.innerHTML = '<span class="delete-icon material-symbols-outlined">check_circle</span> Deleted!';
             setTimeout(() => {
-                deleteBtn.innerHTML = '<span class="delete-icon">🗑️</span> Delete';
+                deleteBtn.innerHTML = '<span class="delete-icon material-symbols-outlined">delete</span> Delete';
             }, 2000);
 
         } catch (error) {
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Reset button state
             deleteBtn.disabled = false;
-            deleteBtn.innerHTML = '<span class="delete-icon">🗑️</span> Delete';
+            deleteBtn.innerHTML = '<span class="delete-icon material-symbols-outlined">delete</span> Delete';
         }
     }
 
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show upload progress
         uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<span class="upload-icon">⏳</span> Uploading...';
+        uploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">hourglass_top</span> Uploading...';
         
         const uploadResults = [];
         const uploadErrors = [];
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Reset upload button
         uploadBtn.disabled = false;
-        uploadBtn.innerHTML = '<span class="upload-icon">📁</span> Upload Audio';
+        uploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">folder_open</span> Upload Audio';
         refAudioUpload.value = ''; // Clear the input
         
         // Show results
@@ -366,9 +366,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 : `Successfully uploaded ${uploadResults.length} files: ${uploadResults.join(', ')}`;
             
             // Temporarily show success in upload button
-            uploadBtn.innerHTML = '<span class="upload-icon">✅</span> Success!';
+            uploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">check_circle</span> Success!';
             setTimeout(() => {
-                uploadBtn.innerHTML = '<span class="upload-icon">📁</span> Upload Audio';
+                uploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">folder_open</span> Upload Audio';
             }, 2000);
         }
         
@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show upload progress
         textUploadBtn.disabled = true;
-        textUploadBtn.innerHTML = '<span class="upload-icon">⏳</span> Uploading...';
+        textUploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">hourglass_top</span> Uploading...';
         
         const uploadResults = [];
         const uploadErrors = [];
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Reset upload button
         textUploadBtn.disabled = false;
-        textUploadBtn.innerHTML = '<span class="upload-icon">📄</span> Upload Text';
+        textUploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">upload_file</span> Upload Text';
         textFileUpload.value = ''; // Clear the input
         
         // Show results and update textarea
@@ -468,9 +468,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 : `Successfully uploaded ${uploadResults.length} files: ${uploadResults.join(', ')}`;
             
             // Temporarily show success in upload button
-            textUploadBtn.innerHTML = '<span class="upload-icon">✅</span> Success!';
+            textUploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">check_circle</span> Success!';
             setTimeout(() => {
-                textUploadBtn.innerHTML = '<span class="upload-icon">📄</span> Upload Text';
+                textUploadBtn.innerHTML = '<span class="upload-icon material-symbols-outlined">upload_file</span> Upload Text';
             }, 2000);
         }
         
@@ -496,9 +496,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     option.value = filename;
                     // Display cleaner names: show folder prefix for organization
                     if (filename.startsWith('default/')) {
-                        option.textContent = `📁 ${filename.replace('default/', '')} (default)`;
+                        option.innerHTML = `<span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">folder</span>${filename.replace('default/', '')} (default)`;
                     } else if (filename.startsWith('custom/')) {
-                        option.textContent = `🎵 ${filename.replace('custom/', '')} (custom)`;
+                        option.innerHTML = `<span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">library_music</span>${filename.replace('custom/', '')} (custom)`;
                     } else {
                         option.textContent = filename;
                     }
@@ -699,12 +699,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setLoadingState(loading) {
         if (loading) {
-            // Change to stop button
-            btnText.textContent = 'Stop Generation';
+            // Show generating state with spinner, then switch to stop button
+            btnText.textContent = 'Generating';
             btnText.style.display = 'inline';
-            spinner.style.display = 'none';
-            generateBtn.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+            spinner.style.display = 'inline';
+            generateBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
             generateBtn.disabled = false; // Keep enabled so user can click to stop
+            
+            // After a short delay, change to stop button
+            if (currentTTSController) { // Only change if still generating
+                btnText.textContent = 'Stop Generation';
+                generateBtn.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+            }
         } else {
             // Change back to generate button
             btnText.textContent = 'Generate Speech';

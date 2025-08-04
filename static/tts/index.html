@@ -4,10 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>F5-TTS Demo</title>
-    <link rel="stylesheet" href="/static/main.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="/static/tts/main.css">
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
 </head>
 <body>
+    <!-- Hidden preloader for Material Icons -->
+    <div style="position: absolute; left: -9999px; visibility: hidden;">
+        <span class="material-symbols-outlined">progress_activity</span>
+        <span class="material-symbols-outlined">delete</span>
+        <span class="material-symbols-outlined">upload_file</span>
+        <span class="material-symbols-outlined">folder</span>
+        <span class="material-symbols-outlined">library_music</span>
+        <span class="material-symbols-outlined">hourglass_top</span>
+        <span class="material-symbols-outlined">check_circle</span>
+    </div>
+    
     <div class="container">
         <header>
             <h1>F5-TTS Text-to-Speech Demo</h1>
@@ -34,11 +46,11 @@
                             <option value="">Loading available reference audios...</option>
                         </select>
                         <button type="button" id="upload-btn" class="upload-btn">
-                            <span class="upload-icon">📁</span>
+                            <span class="upload-icon material-symbols-outlined">upload_file</span>
                             Upload Audio
                         </button>
                         <button type="button" id="delete-btn" class="delete-btn" disabled>
-                            <span class="delete-icon">🗑️</span>
+                            <span class="delete-icon material-symbols-outlined">delete</span>
                             Delete
                         </button>
                         <input type="file" id="ref-audio-upload" accept=".wav,.mp3,.flac,.m4a,.ogg" multiple style="display: none;">
@@ -64,7 +76,7 @@
                             class="ref-text-input"
                         ></textarea>
                         <button type="button" id="text-upload-btn" class="text-upload-btn">
-                            <span class="upload-icon">📄</span>
+                            <span class="upload-icon material-symbols-outlined">upload_file</span>
                             Upload Text
                         </button>
                         <input type="file" id="text-file-upload" accept=".txt" multiple style="display: none;">
@@ -176,7 +188,7 @@
                 
                 <button type="submit" id="generate-btn" class="generate-btn">
                     <span class="btn-text">Generate Speech</span>
-                    <span class="spinner" style="display: none;">Loading...</span>
+                    <span class="spinner material-symbols-outlined" style="display: none;">progress_activity</span>
                 </button>
             </form>
             
@@ -198,6 +210,6 @@
         </main>
     </div>
     
-    <script src="/static/main.js"></script>
+    <script src="/static/tts/main.js"></script>
 </body>
 </html>

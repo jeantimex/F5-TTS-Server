@@ -92,7 +92,7 @@ class TTSRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     try:
-        with open("static/index.html", "r", encoding="utf-8") as f:
+        with open("static/tts/index.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Index file not found")
