@@ -99,6 +99,16 @@ async def read_index():
     except UnicodeDecodeError:
         raise HTTPException(status_code=500, detail="Error reading index file")
 
+@app.get("/conversation", response_class=HTMLResponse)
+async def read_conversation():
+    try:
+        with open("static/conversation/index.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Conversation interface not found")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=500, detail="Error reading conversation interface")
+
 @app.get("/ref-audios/")
 async def list_reference_audios():
     """List available reference audio files from both default and custom folders"""
