@@ -2,6 +2,8 @@
 
 This project provides a web server and a user-friendly interface for the F5-TTS model, allowing you to easily perform text-to-speech synthesis with voice cloning capabilities.
 
+![F5-TTS Server Interface](f5-tts-server-app.png)
+
 ## Features
 
 * **Web Interface:** A simple and intuitive web UI to generate speech without using the command line.
