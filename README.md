@@ -4,6 +4,32 @@ This project provides a web server and a user-friendly interface for the F5-TTS 
 
 ![F5-TTS Server Interface](f5-tts-server-app.png)
 
+## How to Use
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone https://github.com/jeantimex/F5-TTS-Server.git
+    cd F5-TTS-Server
+    ```
+
+2.  **Create and activate a virtual environment:**
+
+    ```bash
+    python -m venv venv
+    source venv/bin/activate
+    ```
+
+3.  **Run the start script:**
+
+    This will install the required dependencies and start the server.
+
+    ```bash
+    ./start.sh
+    ```
+
+    The server will be running at `http://127.0.0.1:8000`.
+
 ## Features
 
 * **Web Interface:** A simple and intuitive web UI to generate speech without using the command line.
